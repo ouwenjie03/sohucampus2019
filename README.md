@@ -7,6 +7,7 @@ result:
 
 
 ## run
+put the data in './data'
 `sh run.sh`
 
 ## config
