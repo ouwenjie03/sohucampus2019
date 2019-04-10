@@ -37,6 +37,6 @@ class Config:
         self.char_cnn_kernel_size = 5
 
         self.batch_size = 256
-        self.epoch_size = 20
+        self.epoch_size = 5
 
         self.clip_grad = 10.

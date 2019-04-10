@@ -9,3 +9,10 @@ result:
 ## run
 `sh run.sh`
 
+## config
+Environment:
+- python 3.6.5
+- pytorch 1.0.0
+
+GPU:
+- GeForce GTX 1080ti

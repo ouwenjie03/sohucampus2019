@@ -90,49 +90,48 @@ def train(config, save_dir):
             logging.info('TRAIN | epoch {} | batch {} | loss {} | cost {:.5f}s'.format(epoch, batch_i, loss.item(), etime-stime))
             torch.cuda.empty_cache()
 
-            if batch_i % 100 == 0:
-                model.eval()
-                valid_entity_losses = 0.0
-                valid_emotion_losses = 0.0
-                li = 0
-                # valid
-                with torch.no_grad():
-                    for valid_batch_datas in valid_dl.get_batch(config.batch_size):
-                        valid_seqs = [_x[0] for _x in valid_batch_datas]
-                        valid_seq_lens = [len(_x) for _x in valid_seqs]
-                        valid_ents = [_x[1] for _x in valid_batch_datas]
-                        valid_emos = [_x[2] for _x in valid_batch_datas]
+        model.eval()
+        valid_entity_losses = 0.0
+        valid_emotion_losses = 0.0
+        li = 0
+        # valid
+        with torch.no_grad():
+            for valid_batch_datas in valid_dl.get_batch(config.batch_size):
+                valid_seqs = [_x[0] for _x in valid_batch_datas]
+                valid_seq_lens = [len(_x) for _x in valid_seqs]
+                valid_ents = [_x[1] for _x in valid_batch_datas]
+                valid_emos = [_x[2] for _x in valid_batch_datas]
 
-                        valid_entity_scores, valid_emotion_scores = model(valid_seqs, valid_seq_lens)
-                        valid_entity_loss = model.get_loss(valid_entity_scores, valid_ents, valid_seq_lens)
-                        valid_emotion_loss = model.get_loss(valid_emotion_scores, valid_emos, valid_seq_lens)
+                valid_entity_scores, valid_emotion_scores = model(valid_seqs, valid_seq_lens)
+                valid_entity_loss = model.get_loss(valid_entity_scores, valid_ents, valid_seq_lens)
+                valid_emotion_loss = model.get_loss(valid_emotion_scores, valid_emos, valid_seq_lens)
 
-                        entity_predicts = torch.argmax(valid_entity_scores, dim=-1)
-                        emotion_predicts = torch.argmax(valid_emotion_scores, dim=-1)
-                        if entity_predicts.is_cuda:
-                            entity_predicts = entity_predicts.to(torch.device('cpu'))
-                            emotion_predicts = emotion_predicts.to(torch.device('cpu'))
-                        entity_predicts = entity_predicts.numpy()
-                        emotion_predicts = emotion_predicts.numpy()
-                        ent_preds = []
-                        emo_preds = []
-                        for i, l in enumerate(valid_seq_lens):
-                            ent_preds.append(entity_predicts[i, :l])
-                            emo_preds.append(emotion_predicts[i, :l])
+                entity_predicts = torch.argmax(valid_entity_scores, dim=-1)
+                emotion_predicts = torch.argmax(valid_emotion_scores, dim=-1)
+                if entity_predicts.is_cuda:
+                    entity_predicts = entity_predicts.to(torch.device('cpu'))
+                    emotion_predicts = emotion_predicts.to(torch.device('cpu'))
+                entity_predicts = entity_predicts.numpy()
+                emotion_predicts = emotion_predicts.numpy()
+                ent_preds = []
+                emo_preds = []
+                for i, l in enumerate(valid_seq_lens):
+                    ent_preds.append(entity_predicts[i, :l])
+                    emo_preds.append(emotion_predicts[i, :l])
 
-                        valid_entity_losses += valid_entity_loss.item() * len(valid_ents)
-                        valid_emotion_losses += valid_emotion_loss.item() * len(valid_emos)
-                        li += len(valid_emos)
+                valid_entity_losses += valid_entity_loss.item() * len(valid_ents)
+                valid_emotion_losses += valid_emotion_loss.item() * len(valid_emos)
+                li += len(valid_emos)
 
-                        torch.cuda.empty_cache()
+                torch.cuda.empty_cache()
 
-                    writer.add_scalar('valid_entity_loss', valid_entity_losses/li, valid_i)
-                    writer.add_scalar('valid_emotion_loss', valid_emotion_losses/li, valid_i)
+            writer.add_scalar('valid_entity_loss', valid_entity_losses/li, valid_i)
+            writer.add_scalar('valid_emotion_loss', valid_emotion_losses/li, valid_i)
 
-                save_path = '{}/{}_{}.pkl'.format(save_dir, config.model_name, valid_i)
-                model.save_model(save_path)
+        save_path = '{}/{}_{}.pkl'.format(save_dir, config.model_name, valid_i)
+        model.save_model(save_path)
 
-                valid_i += 1
+        valid_i += 1
 
 
 def predict(config, load_file, test_file):
